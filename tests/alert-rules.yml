@@ -1,0 +1,89 @@
+rule_files:
+  - rules.yml
+evaluation_interval: 1m
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'hydraqueuerunner_machine_consecutive_failures{hostname="builder1"}'
+        values: '0 0 3 3 3 3 3 3 3 3'
+      - series: 'hydraqueuerunner_machine_consecutive_failures{hostname="builder2"}'
+        values: '0x9'
+      - series: 'hydra_machine_disabled_until{hostname="builder1"}'
+        values: '0 0 0 0 900 900 900 900 900 900'
+      - series: 'hydra_machine_enabled{hostname="builder1"}'
+        values: '1 1 1 1 0 0 0 0 0 0'
+      - series: 'hydra_machine_enabled{hostname="builder2"}'
+        values: '1x9'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: HydraBuilderFailing
+        exp_alerts: []
+      - eval_time: 9m
+        alertname: HydraBuilderFailing
+        exp_alerts:
+          - exp_labels: { severity: warning, hostname: builder1 }
+            exp_annotations:
+              summary: "Hydra builder builder1 is failing steps"
+              description: "3 step(s) in a row failed on builder1. Hydra drops a builder out of rotation once these pile up."
+      - eval_time: 9m
+        alertname: HydraBuilderDisabled
+        exp_alerts:
+          - exp_labels: { severity: critical, hostname: builder1 }
+            exp_annotations:
+              summary: "Hydra took builder builder1 out of rotation"
+              description: "Too many failures in a row; builder1 is disabled until 1970-01-01 00:15:00 +0000 UTC."
+      - eval_time: 9m
+        alertname: HydraBuilderNotEnabled
+        exp_alerts:
+          - exp_labels: { severity: warning, hostname: builder1 }
+            exp_annotations:
+              summary: "Hydra builder builder1 is not enabled"
+              description: "builder1 is still in the machine list but Hydra is not scheduling on it."
+      # builder2 is healthy, so the fleet-wide alert stays quiet
+      - eval_time: 9m
+        alertname: HydraNoBuildersLeft
+        exp_alerts: []
+
+  - interval: 1m
+    input_series:
+      - series: 'hydra_machine_enabled{hostname="builder1"}'
+        values: '0x9'
+      - series: 'hydra_machine_enabled{hostname="builder2"}'
+        values: '0x9'
+    alert_rule_test:
+      - eval_time: 9m
+        alertname: HydraNoBuildersLeft
+        exp_alerts:
+          - exp_labels: { severity: critical }
+            exp_annotations:
+              summary: "Hydra has no usable build machines"
+              description: "Every machine in the status JSON is disabled. Nothing can build."
+
+  - interval: 1m
+    input_series:
+      - series: 'hydraqueuerunner_steps_unsupported'
+        values: '2x20'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: HydraStepsUnsupported
+        exp_alerts: []
+      - eval_time: 20m
+        alertname: HydraStepsUnsupported
+        exp_alerts:
+          - exp_labels: { severity: warning }
+            exp_annotations:
+              summary: "2 queued step(s) have no machine that can build them"
+              description: "No enabled builder offers the system type or features these steps need. They stay queued until one shows up."
+
+  - interval: 1m
+    input_series:
+      - series: 'up{job="hydra", instance="http://hydra:3000/queue-runner-status"}'
+        values: '1 1 0 0 0 0 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 9m
+        alertname: HydraQueueRunnerStatusDown
+        exp_alerts:
+          - exp_labels: { severity: critical, job: hydra, instance: "http://hydra:3000/queue-runner-status" }
+            exp_annotations:
+              summary: "Hydra's queue-runner-status is unreachable"
+              description: "The json_exporter could not scrape http://hydra:3000/queue-runner-status, so none of these alerts can fire on real data."

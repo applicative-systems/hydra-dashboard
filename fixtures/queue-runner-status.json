@@ -1,0 +1,92 @@
+{
+  "status": "up",
+  "time": 1754630000,
+  "uptime": 3600,
+  "pid": 1234,
+  "nrQueuedBuilds": 42,
+  "nrUnfinishedSteps": 55,
+  "nrRunnableSteps": 40,
+  "nrActiveSteps": 8,
+  "nrStepsBuilding": 8,
+  "nrStepsCopyingTo": 1,
+  "nrStepsCopyingFrom": 2,
+  "nrStepsWaiting": 0,
+  "nrUnsupportedSteps": 0,
+  "bytesSent": 123456789,
+  "bytesReceived": 987654321,
+  "nrBuildsRead": 100,
+  "buildReadTimeMs": 5000,
+  "buildReadTimeAvgMs": 50,
+  "nrBuildsDone": 58,
+  "nrStepsStarted": 70,
+  "nrStepsDone": 62,
+  "nrRetries": 3,
+  "maxNrRetries": 2,
+  "nrQueueWakeups": 12,
+  "nrDispatcherWakeups": 34,
+  "dispatchTimeMs": 456,
+  "dispatchTimeAvgMs": 13.4,
+  "nrDbConnections": 4,
+  "nrActiveDbUpdates": 1,
+  "totalStepTime": 12345,
+  "totalStepBuildTime": 11111,
+  "avgStepTime": 199.1,
+  "avgStepBuildTime": 179.2,
+  "machines": {
+    "ssh://root@builder1": {
+      "enabled": true,
+      "systemTypes": ["x86_64-linux"],
+      "supportedFeatures": [],
+      "mandatoryFeatures": [],
+      "nrStepsDone": 40,
+      "currentJobs": 4,
+      "disabledUntil": 0,
+      "lastFailure": 0,
+      "consecutiveFailures": 0,
+      "totalStepTime": 8000,
+      "totalStepBuildTime": 7000,
+      "avgStepTime": 200.0,
+      "avgStepBuildTime": 175.0
+    },
+    "ssh://root@builder2": {
+      "enabled": false,
+      "systemTypes": ["x86_64-linux"],
+      "supportedFeatures": [],
+      "mandatoryFeatures": [],
+      "nrStepsDone": 0,
+      "currentJobs": 0,
+      "idleSince": 1754620000,
+      "disabledUntil": 1754640000,
+      "lastFailure": 1754629000,
+      "consecutiveFailures": 5
+    }
+  },
+  "machineTypes": {
+    "x86_64-linux": {
+      "runnable": 40,
+      "running": 8,
+      "waitTime": 900
+    }
+  },
+  "jobsets": {
+    "demo:trivial": { "shareUsed": 0.5, "seconds": 12 },
+    "demo:wave": { "shareUsed": 3.25, "seconds": 2100 }
+  },
+  "store": {
+    "narInfoRead": 10,
+    "narInfoReadAverted": 5,
+    "narInfoMissing": 2,
+    "narInfoWrite": 60,
+    "narInfoCacheSize": 100,
+    "narRead": 20,
+    "narReadBytes": 1000000,
+    "narReadCompressedBytes": 300000,
+    "narWrite": 60,
+    "narWriteAverted": 3,
+    "narWriteBytes": 5000000,
+    "narWriteCompressedBytes": 1500000,
+    "narWriteCompressionTimeMs": 800,
+    "narCompressionSavings": 0.7,
+    "narCompressionSpeed": 55.5
+  }
+}

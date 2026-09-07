@@ -1,0 +1,2455 @@
+{
+  "uid": "hydra",
+  "title": "Hydra",
+  "description": "Every metric scraped out of Hydra's /queue-runner-status endpoint. The sections follow the JSON: queue totals, per machine, per system type, per jobset, and the runner's local store.",
+  "tags": [
+    "hydra"
+  ],
+  "editable": true,
+  "graphTooltip": 1,
+  "annotations": {
+    "list": []
+  },
+  "links": [],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "label": "Datasource",
+        "type": "datasource",
+        "query": "prometheus",
+        "refresh": 1,
+        "hide": 0,
+        "current": {
+          "text": "Prometheus",
+          "value": "prometheus"
+        }
+      },
+      {
+        "name": "machine",
+        "label": "Machine",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "query": {
+          "query": "label_values(hydraqueuerunner_machine_current_jobs, hostname)",
+          "refId": "machine"
+        },
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true,
+        "sort": 1,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      },
+      {
+        "name": "platform",
+        "label": "Platform",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "query": {
+          "query": "label_values(hydraqueuerunner_machine_type_runnable, machine_type)",
+          "refId": "platform"
+        },
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true,
+        "sort": 1,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Queue",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Queued builds",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "hydraqueuerunner_builds_unfinished",
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 20
+              },
+              {
+                "color": "red",
+                "value": 50
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "description": "Builds still waiting to finish. One build can be many steps. (nrQueuedBuilds)"
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "ETA (all steps done)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(time() + (hydraqueuerunner_steps_unfinished / clamp_min(rate(hydraqueuerunner_steps_finished[1h]), 0.1))) * 1000",
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dateTimeAsIsoNoDateIfToday",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "description": "When the queue should be empty, if steps keep finishing at the rate measured over the last hour. Reads pessimistic right after a burst arrives and settles as the rate catches up."
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Backlog",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "hydraqueuerunner_steps_unfinished / clamp_min(rate(hydraqueuerunner_steps_finished[1h]), 0.1) / 3600",
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "h",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 8
+              }
+            ]
+          },
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "description": "The same estimate as the ETA, written as hours of work left."
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Steps building now",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "hydraqueuerunner_steps_building",
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "description": "Steps running on a builder right now. (nrStepsBuilding)"
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Unsupported steps",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "hydraqueuerunner_steps_unsupported",
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "description": "Steps no builder can take, because no machine offers their system type. Anything above zero sits in the queue until you add a builder. (nrUnsupportedSteps)"
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Highest retry count",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "hydraqueuerunner_steps_max_retries",
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 3
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "description": "The most attempts any single step has needed so far. Climbs when builders start failing. (maxNrRetries)"
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "Effective parallelism",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 12,
+        "y": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(hydraqueuerunner_steps_total_time_ms[5m]) / 1000",
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "description": "How many steps run at the same time, on average: seconds of step time accumulated per second of wall-clock. 4 means four steps ran throughout."
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "Average step time",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 18,
+        "y": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "hydraqueuerunner_steps_avg_total_time_ms",
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "description": "Average time from a step being dispatched to it finishing, including copying and waiting. Averaged since the runner started. (avgStepTime)"
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Queue burndown",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 11
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "hydraqueuerunner_builds_unfinished",
+          "legendFormat": "builds queued"
+        },
+        {
+          "refId": "B",
+          "expr": "hydraqueuerunner_steps_unfinished",
+          "legendFormat": "steps unfinished"
+        },
+        {
+          "refId": "C",
+          "expr": "hydraqueuerunner_steps_runnable",
+          "legendFormat": "steps runnable"
+        },
+        {
+          "refId": "D",
+          "expr": "hydraqueuerunner_steps_building",
+          "legendFormat": "steps building"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "axisSoftMin": 0
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        }
+      },
+      "description": "How much work is left, and how far along it is: queued builds, unfinished steps, steps ready to run, steps running."
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Steps completed per minute",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 11
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(hydraqueuerunner_steps_finished[$__rate_interval]) * 60",
+          "legendFormat": "steps done / min"
+        },
+        {
+          "refId": "B",
+          "expr": "hydraqueuerunner_steps_unfinished",
+          "legendFormat": "queued steps"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "axisSoftMin": 0
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        }
+      },
+      "description": "Throughput against remaining work. The ETA is built on this rate, smoothed over an hour so it does not jump. (upstream: 'Hydra Jobs')"
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "Step pipeline",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 20
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "hydraqueuerunner_steps_waiting",
+          "legendFormat": "waiting for a slot"
+        },
+        {
+          "refId": "B",
+          "expr": "hydraqueuerunner_steps_copying_to",
+          "legendFormat": "copying inputs to builder"
+        },
+        {
+          "refId": "C",
+          "expr": "hydraqueuerunner_steps_building",
+          "legendFormat": "building"
+        },
+        {
+          "refId": "D",
+          "expr": "hydraqueuerunner_steps_copying_from",
+          "legendFormat": "copying outputs back"
+        },
+        {
+          "refId": "E",
+          "expr": "hydraqueuerunner_steps_unsupported",
+          "legendFormat": "unsupported"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "fillOpacity": 25,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "axisSoftMin": 0,
+            "stacking": {
+              "mode": "normal"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        }
+      },
+      "description": "Where the unfinished steps are right now. A tall copying band means the network between Hydra and its builders is the bottleneck, not the builders."
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "Steps started vs finished",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 20
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(hydraqueuerunner_steps_started[$__rate_interval]) * 60",
+          "legendFormat": "started / min"
+        },
+        {
+          "refId": "B",
+          "expr": "rate(hydraqueuerunner_steps_finished[$__rate_interval]) * 60",
+          "legendFormat": "finished / min"
+        },
+        {
+          "refId": "C",
+          "expr": "hydra_steps_active",
+          "legendFormat": "active steps (classic only)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "axisSoftMin": 0
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        }
+      },
+      "description": "If steps keep starting faster than they finish, work is accumulating inside the runner."
+    },
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "Retries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 29
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(hydraqueuerunner_steps_retries[$__rate_interval]) * 60",
+          "legendFormat": "retries / min"
+        },
+        {
+          "refId": "B",
+          "expr": "hydraqueuerunner_steps_max_retries",
+          "legendFormat": "highest retry count"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "axisSoftMin": 0
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        }
+      },
+      "description": "Steps Hydra had to run again after a failure. Usually the first visible sign that a builder has gone bad. (nrRetries, maxNrRetries)"
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "Average step time vs build time",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 29
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "hydraqueuerunner_steps_avg_total_time_ms",
+          "legendFormat": "avg step time"
+        },
+        {
+          "refId": "B",
+          "expr": "hydraqueuerunner_steps_avg_build_time_ms",
+          "legendFormat": "avg build time"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "axisSoftMin": 0
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        }
+      },
+      "description": "Both averaged since the runner started. The gap between the lines is everything that is not building: waiting for a free slot, copying inputs and outputs."
+    },
+    {
+      "id": 16,
+      "type": "timeseries",
+      "title": "Cumulative step time",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 38
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "hydraqueuerunner_steps_total_time_ms / 1000 / 3600",
+          "legendFormat": "step time"
+        },
+        {
+          "refId": "B",
+          "expr": "hydraqueuerunner_steps_total_build_time_ms / 1000 / 3600",
+          "legendFormat": "build time"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "h",
+          "custom": {
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "axisSoftMin": 0
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        }
+      },
+      "description": "Total builder time spent since the runner started. The lower line is the part that was actual building. (totalStepTime, totalStepBuildTime)"
+    },
+    {
+      "id": 17,
+      "type": "timeseries",
+      "title": "Builds read from the queue",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 38
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(hydraqueuerunner_builds_read[$__rate_interval]) * 60",
+          "legendFormat": "builds read / min"
+        },
+        {
+          "refId": "B",
+          "expr": "rate(hydraqueuerunner_builds_finished[$__rate_interval]) * 60",
+          "legendFormat": "builds finished / min"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "axisSoftMin": 0
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        }
+      },
+      "description": "How fast the runner picks up new builds from the database, against how fast it retires them. (nrBuildsRead, nrBuildsDone)"
+    },
+    {
+      "id": 18,
+      "type": "timeseries",
+      "title": "Queue read latency",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 47
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(hydraqueuerunner_builds_read_time_ms[5m]) / clamp_min(rate(hydraqueuerunner_builds_read[5m]), 0.001)",
+          "legendFormat": "ms per build read"
+        },
+        {
+          "refId": "B",
+          "expr": "hydra_builds_read_time_avg_ms",
+          "legendFormat": "since-boot average (classic only)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "axisSoftMin": 0
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        }
+      },
+      "description": "How long the runner takes to fetch one build from postgres. Rises when the database is under load. (buildReadTimeMs / nrBuildsRead)"
+    },
+    {
+      "id": 19,
+      "type": "row",
+      "title": "Machines",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 56
+      },
+      "panels": []
+    },
+    {
+      "id": 20,
+      "type": "timeseries",
+      "title": "Current jobs per machine",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 57
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "hydraqueuerunner_machine_current_jobs{hostname=~\"$machine\"}",
+          "legendFormat": "{{hostname}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "fillOpacity": 20,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "axisSoftMin": 0,
+            "stacking": {
+              "mode": "normal"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        }
+      },
+      "description": "Steps running on each builder, stacked so the total is the pool's current load. (machines.*.currentJobs; upstream: 'Jobs per Machine')"
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "Steps completed per minute, per machine",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 57
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(hydraqueuerunner_machine_steps_done{hostname=~\"$machine\"}[$__rate_interval]) * 60",
+          "legendFormat": "{{hostname}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "axisSoftMin": 0
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "mean"
+          ]
+        }
+      },
+      "description": "How much each builder is actually getting done. A builder that flatlines while the others keep going is the one to look at."
+    },
+    {
+      "id": 22,
+      "type": "timeseries",
+      "title": "Consecutive failures per machine",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 66
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "hydraqueuerunner_machine_consecutive_failures{hostname=~\"$machine\"}",
+          "legendFormat": "{{hostname}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "axisSoftMin": 0
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        }
+      },
+      "description": "Failures in a row on one builder; any success resets it to zero. A line that keeps climbing means the machine fails everything it is given. (machines.*.consecutiveFailures)"
+    },
+    {
+      "id": 23,
+      "type": "timeseries",
+      "title": "Machine enabled",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 66
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "hydra_machine_enabled{hostname=~\"$machine\"}",
+          "legendFormat": "{{hostname}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "fillOpacity": 15,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "axisSoftMin": 0,
+            "lineInterpolation": "stepAfter"
+          },
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        }
+      },
+      "description": "1 while Hydra is willing to send work to a builder, 0 once it has given up on it. (machines.*.enabled, classic runner only)"
+    },
+    {
+      "id": 24,
+      "type": "table",
+      "title": "Disabled builders (seconds until re-enable)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 75
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(hydra_machine_disabled_until{hostname=~\"$machine\"} - time()) by (hostname) > 0",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {},
+      "description": "Builders Hydra has taken out of rotation after repeated failures, and the seconds left until it tries them again. Empty is the healthy state. (machines.*.disabledUntil, classic runner only)"
+    },
+    {
+      "id": 25,
+      "type": "timeseries",
+      "title": "Time since last failure",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 75
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(time() - hydra_machine_last_failure{hostname=~\"$machine\"}) and hydra_machine_last_failure{hostname=~\"$machine\"} > 0",
+          "legendFormat": "{{hostname}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "axisSoftMin": 0
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        }
+      },
+      "description": "How long each builder has gone without a failure. A builder that has never failed has no line. (machines.*.lastFailure, classic runner only)"
+    },
+    {
+      "id": 26,
+      "type": "timeseries",
+      "title": "Average step time per machine",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 83
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "hydra_machine_avg_step_time_seconds{hostname=~\"$machine\"}",
+          "legendFormat": "step {{hostname}}"
+        },
+        {
+          "refId": "B",
+          "expr": "hydra_machine_avg_step_build_time_seconds{hostname=~\"$machine\"}",
+          "legendFormat": "build {{hostname}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "axisSoftMin": 0
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        }
+      },
+      "description": "Average step and build time per builder since the runner started. A machine well above the others is slow, overloaded, or building from a cold cache. (classic runner only)"
+    },
+    {
+      "id": 27,
+      "type": "timeseries",
+      "title": "Machine busy time",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 83
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(hydraqueuerunner_machine_total_step_time_ms{hostname=~\"$machine\"}[5m]) / 1000",
+          "legendFormat": "step {{hostname}}"
+        },
+        {
+          "refId": "B",
+          "expr": "rate(hydraqueuerunner_machine_total_step_build_time_ms{hostname=~\"$machine\"}[5m]) / 1000",
+          "legendFormat": "build {{hostname}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "axisSoftMin": 0,
+            "axisSoftMax": 1
+          },
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "mean"
+          ]
+        }
+      },
+      "description": "Seconds of work per second of wall-clock: 2.0 means two steps ran on this builder the whole time. Compare it with the machine's configured job slots to see spare capacity. The gap between step and build is time spent copying."
+    },
+    {
+      "id": 28,
+      "type": "timeseries",
+      "title": "Idle time per machine",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 91
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "time() - hydraqueuerunner_machine_idle_since_timestamp{hostname=~\"$machine\"}",
+          "legendFormat": "{{hostname}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "axisSoftMin": 0
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        }
+      },
+      "description": "How long each builder has been sitting idle. Hydra only reports this while a machine is idle, so busy builders drop off the graph. (machines.*.idleSince)"
+    },
+    {
+      "id": 29,
+      "type": "bargauge",
+      "title": "Steps done per machine (total)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 91
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "hydraqueuerunner_machine_steps_done{hostname=~\"$machine\"}",
+          "instant": true,
+          "legendFormat": "{{hostname}}"
+        }
+      ],
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "description": "Steps each builder has finished since the runner started, i.e. the share of the load it carries. (machines.*.nrStepsDone)"
+    },
+    {
+      "id": 30,
+      "type": "row",
+      "title": "Platforms",
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 99
+      },
+      "panels": [
+        {
+          "id": 31,
+          "type": "timeseries",
+          "title": "Runnable vs running per platform",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 0,
+            "y": 100
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "hydraqueuerunner_machine_type_runnable{machine_type=~\"$platform\"}",
+              "legendFormat": "runnable {{machine_type}}"
+            },
+            {
+              "refId": "B",
+              "expr": "hydraqueuerunner_machine_type_running{machine_type=~\"$platform\"}",
+              "legendFormat": "running {{machine_type}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "fillOpacity": 10,
+                "lineWidth": 2,
+                "showPoints": "never",
+                "axisSoftMin": 0
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": []
+            }
+          },
+          "description": "Steps ready to run against steps actually running, per system type. A runnable line that stays above the running line means you are short of builders for that platform."
+        },
+        {
+          "id": 32,
+          "type": "timeseries",
+          "title": "Queue wait pressure per platform",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 12,
+            "y": 100
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "rate(hydraqueuerunner_machine_type_wait_time{machine_type=~\"$platform\"}[5m]) / 1000",
+              "legendFormat": "{{machine_type}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "fillOpacity": 10,
+                "lineWidth": 2,
+                "showPoints": "never",
+                "axisSoftMin": 0
+              },
+              "decimals": 1
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": []
+            }
+          },
+          "description": "Seconds of waiting accumulated per second of wall-clock, i.e. roughly how many steps of this type are stuck without a builder to run on."
+        },
+        {
+          "id": 33,
+          "type": "timeseries",
+          "title": "Time since a platform last ran a step",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 109
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "(time() - hydra_machine_type_last_active{machine_type=~\"$platform\"}) and hydra_machine_type_last_active{machine_type=~\"$platform\"} > 0",
+              "legendFormat": "{{machine_type}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "custom": {
+                "fillOpacity": 10,
+                "lineWidth": 2,
+                "showPoints": "never",
+                "axisSoftMin": 0
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": []
+            }
+          },
+          "description": "How long since anything of this system type last ran. Only reported while nothing of the type is running. (machineTypes.*.lastActive, classic runner only)"
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "type": "row",
+      "title": "Jobsets",
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 100
+      },
+      "panels": [
+        {
+          "id": 35,
+          "type": "timeseries",
+          "title": "Build time consumed per jobset",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 0,
+            "y": 101
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "hydraqueuerunner_jobset_seconds",
+              "legendFormat": "{{jobset_name}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "custom": {
+                "fillOpacity": 10,
+                "lineWidth": 2,
+                "showPoints": "never",
+                "axisSoftMin": 0
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": []
+            }
+          },
+          "description": "Builder time each jobset has used in the current scheduling window. (jobsets.*.seconds)"
+        },
+        {
+          "id": 36,
+          "type": "timeseries",
+          "title": "Scheduling shares used per jobset",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 12,
+            "y": 101
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "hydraqueuerunner_jobset_share_used",
+              "legendFormat": "{{jobset_name}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "fillOpacity": 10,
+                "lineWidth": 2,
+                "showPoints": "never",
+                "axisSoftMin": 0
+              },
+              "decimals": 2
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": []
+            }
+          },
+          "description": "Hydra's fair-share accounting. A jobset far above the others has been taking more than its share, so its steps get scheduled last. (jobsets.*.shareUsed)"
+        }
+      ]
+    },
+    {
+      "id": 37,
+      "type": "row",
+      "title": "Local store and binary cache",
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 101
+      },
+      "panels": [
+        {
+          "id": 38,
+          "type": "stat",
+          "title": "narinfo cache hit rate",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 0,
+            "y": 102
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "hydraqueuerunner_store_nar_info_read_averted / clamp_min(hydraqueuerunner_store_nar_info_read_averted + hydraqueuerunner_store_nar_info_read, 1)",
+              "instant": true
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "value",
+            "graphMode": "area"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.5
+                  },
+                  {
+                    "color": "green",
+                    "value": 0.9
+                  }
+                ]
+              },
+              "decimals": 3
+            },
+            "overrides": []
+          },
+          "description": "Share of store-path lookups answered from memory instead of the binary cache. A low rate means a lot of avoidable cache requests. (narInfoReadAverted)"
+        },
+        {
+          "id": 39,
+          "type": "stat",
+          "title": "Path info cache size",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 6,
+            "y": 102
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "hydraqueuerunner_store_path_info_cache_size",
+              "instant": true
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "value",
+            "graphMode": "none"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "text",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "description": "Store-path entries the runner is holding in memory. (narInfoCacheSize)"
+        },
+        {
+          "id": 40,
+          "type": "stat",
+          "title": "NAR compression savings",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 12,
+            "y": 102
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "hydraqueuerunner_store_nar_compression_savings",
+              "instant": true
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "value",
+            "graphMode": "none"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "text",
+                    "value": null
+                  }
+                ]
+              },
+              "decimals": 3
+            },
+            "overrides": []
+          },
+          "description": "Share of bytes saved by compressing store paths before upload. (narCompressionSavings)"
+        },
+        {
+          "id": 41,
+          "type": "stat",
+          "title": "NAR compression speed",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 18,
+            "y": 102
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "hydraqueuerunner_store_nar_compression_speed",
+              "instant": true
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "value",
+            "graphMode": "area"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "MiBs",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "text",
+                    "value": null
+                  }
+                ]
+              },
+              "decimals": 1
+            },
+            "overrides": []
+          },
+          "description": "Throughput of the compressor while packing store paths. (narCompressionSpeed)"
+        },
+        {
+          "id": 42,
+          "type": "timeseries",
+          "title": "narinfo lookups",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 0,
+            "y": 107
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "rate(hydraqueuerunner_store_nar_info_read[5m]) * 60",
+              "legendFormat": "read / min"
+            },
+            {
+              "refId": "B",
+              "expr": "rate(hydraqueuerunner_store_nar_info_read_averted[5m]) * 60",
+              "legendFormat": "served from cache / min"
+            },
+            {
+              "refId": "C",
+              "expr": "rate(hydraqueuerunner_store_nar_info_missing[5m]) * 60",
+              "legendFormat": "missing / min"
+            },
+            {
+              "refId": "D",
+              "expr": "rate(hydraqueuerunner_store_nar_info_write[5m]) * 60",
+              "legendFormat": "written / min"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "fillOpacity": 10,
+                "lineWidth": 2,
+                "showPoints": "never",
+                "axisSoftMin": 0
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": []
+            }
+          },
+          "description": "The runner's metadata traffic: lookups fetched, answered from memory, not found, and written back. (store.narInfo*)"
+        },
+        {
+          "id": 43,
+          "type": "timeseries",
+          "title": "NAR throughput",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 12,
+            "y": 107
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "rate(hydraqueuerunner_store_nar_read_bytes[5m])",
+              "legendFormat": "read"
+            },
+            {
+              "refId": "B",
+              "expr": "rate(hydraqueuerunner_store_nar_write_bytes[5m])",
+              "legendFormat": "written"
+            },
+            {
+              "refId": "C",
+              "expr": "rate(hydraqueuerunner_store_nar_read_compressed_bytes[5m])",
+              "legendFormat": "read, compressed"
+            },
+            {
+              "refId": "D",
+              "expr": "rate(hydraqueuerunner_store_nar_write_compressed_bytes[5m])",
+              "legendFormat": "written, compressed"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "Bps",
+              "custom": {
+                "fillOpacity": 10,
+                "lineWidth": 2,
+                "showPoints": "never",
+                "axisSoftMin": 0
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": []
+            }
+          },
+          "description": "Store-path bytes moved per second, before and after compression. The compressed lines are what actually crosses the network. (store.nar*Bytes)"
+        },
+        {
+          "id": 44,
+          "type": "timeseries",
+          "title": "NAR operations",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 116
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "rate(hydraqueuerunner_store_nar_read[5m]) * 60",
+              "legendFormat": "read / min"
+            },
+            {
+              "refId": "B",
+              "expr": "rate(hydraqueuerunner_store_nar_write[5m]) * 60",
+              "legendFormat": "written / min"
+            },
+            {
+              "refId": "C",
+              "expr": "rate(hydraqueuerunner_store_nar_write_averted[5m]) * 60",
+              "legendFormat": "writes averted / min"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "fillOpacity": 10,
+                "lineWidth": 2,
+                "showPoints": "never",
+                "axisSoftMin": 0
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": []
+            }
+          },
+          "description": "Store paths read and written per minute. Averted writes are uploads skipped because the path was already in the cache. (store.narRead, narWrite, narWriteAverted)"
+        },
+        {
+          "id": 45,
+          "type": "timeseries",
+          "title": "Time spent compressing NARs",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 116
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "rate(hydraqueuerunner_store_nar_write_compression_time_ms[5m]) / 1000",
+              "legendFormat": "compression busy fraction"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "fillOpacity": 10,
+                "lineWidth": 2,
+                "showPoints": "never",
+                "axisSoftMin": 0
+              },
+              "decimals": 2
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": []
+            }
+          },
+          "description": "Seconds spent compressing per second of wall-clock. Near 1 means a full core is busy compressing. (narWriteCompressionTimeMs)"
+        }
+      ]
+    },
+    {
+      "id": 46,
+      "type": "row",
+      "title": "Queue runner internals",
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 102
+      },
+      "panels": [
+        {
+          "id": 47,
+          "type": "timeseries",
+          "title": "Dispatcher",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 103
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "rate(hydraqueuerunner_dispatch_wakeup[$__rate_interval])",
+              "legendFormat": "wakeups / s"
+            },
+            {
+              "refId": "B",
+              "expr": "rate(hydraqueuerunner_dispatch_time_ms[$__rate_interval]) / 1000",
+              "legendFormat": "busy fraction"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "fillOpacity": 10,
+                "lineWidth": 2,
+                "showPoints": "never",
+                "axisSoftMin": 0
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": []
+            }
+          },
+          "description": "How often the scheduler wakes up, and the share of its time it spends handing steps to builders."
+        },
+        {
+          "id": 48,
+          "type": "timeseries",
+          "title": "Dispatcher latency",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 103
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "rate(hydraqueuerunner_dispatch_time_ms[5m]) / clamp_min(rate(hydraqueuerunner_dispatch_wakeup[5m]), 0.001)",
+              "legendFormat": "ms per wakeup"
+            },
+            {
+              "refId": "B",
+              "expr": "hydra_dispatch_time_avg_ms",
+              "legendFormat": "since-boot average (classic only)"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ms",
+              "custom": {
+                "fillOpacity": 10,
+                "lineWidth": 2,
+                "showPoints": "never",
+                "axisSoftMin": 0
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": []
+            }
+          },
+          "description": "Average time one scheduling pass takes. Grows with the size of the queue."
+        },
+        {
+          "id": 49,
+          "type": "timeseries",
+          "title": "Queue monitor wakeups",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 111
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "rate(hydra_queue_wakeup_total[$__rate_interval]) * 60",
+              "legendFormat": "wakeups / min"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "fillOpacity": 10,
+                "lineWidth": 2,
+                "showPoints": "never",
+                "axisSoftMin": 0
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": []
+            }
+          },
+          "description": "How often the runner re-reads the queue from the database. (nrQueueWakeups, classic runner only)"
+        },
+        {
+          "id": 50,
+          "type": "timeseries",
+          "title": "Database",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 111
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "hydra_db_connections",
+              "legendFormat": "connections"
+            },
+            {
+              "refId": "B",
+              "expr": "hydra_db_updates",
+              "legendFormat": "active updates"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "fillOpacity": 10,
+                "lineWidth": 2,
+                "showPoints": "never",
+                "axisSoftMin": 0
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": []
+            }
+          },
+          "description": "Open database connections and updates in flight. (nrDbConnections, nrActiveDbUpdates, classic runner only)"
+        },
+        {
+          "id": 51,
+          "type": "timeseries",
+          "title": "Build data transfer",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 119
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "rate(hydra_build_inputs_sent_bytes_total[$__rate_interval])",
+              "legendFormat": "inputs sent to builders"
+            },
+            {
+              "refId": "B",
+              "expr": "rate(hydra_build_outputs_received_bytes_total[$__rate_interval])",
+              "legendFormat": "outputs received"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "Bps",
+              "custom": {
+                "fillOpacity": 10,
+                "lineWidth": 2,
+                "showPoints": "never",
+                "axisSoftMin": 0
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": []
+            }
+          },
+          "description": "Build inputs sent out to builders and results copied back. (bytesSent, bytesReceived, classic runner only)"
+        },
+        {
+          "id": 52,
+          "type": "stat",
+          "title": "Queue runner uptime",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 12,
+            "y": 119
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "hydraqueuerunner_uptime_seconds",
+              "instant": true
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "value",
+            "graphMode": "none"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "text",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "description": "Time since the queue runner started. A drop to zero here explains every counter on the dashboard resetting. (uptime)"
+        },
+        {
+          "id": 53,
+          "type": "stat",
+          "title": "Status age",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 18,
+            "y": 119
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "time() - hydraqueuerunner_current_time_seconds",
+              "instant": true
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "value",
+            "graphMode": "none"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 60
+                  },
+                  {
+                    "color": "red",
+                    "value": 300
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "description": "Age of the last status dump Hydra produced. If this keeps growing the scrape is failing, and the queue is not simply quiet. (time)"
+        }
+      ]
+    }
+  ]
+}
