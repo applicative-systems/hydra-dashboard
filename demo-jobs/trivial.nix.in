@@ -1,0 +1,16 @@
+{ ... }:
+let
+  bash = builtins.storePath "@BASH@";
+in
+{
+  trivial = derivation {
+    name = "demo-trivial";
+    system = "x86_64-linux";
+    builder = "${bash}/bin/bash";
+    args = [
+      "-c"
+      "echo success > $out"
+    ];
+    allowSubstitutes = false;
+  };
+}

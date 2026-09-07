@@ -34,7 +34,7 @@
       lib.mkJsonExporterConfig = import ./lib/json-exporter-config.nix;
 
       checks.${system} = {
-        integration = pkgs.testers.runNixOSTest ./nix/test.nix;
+        integration = pkgs.testers.runNixOSTest ./tests/integration.nix;
 
         exporter-fixture =
           pkgs.runCommand "exporter-fixture-check"
@@ -148,7 +148,7 @@
         '';
 
         # too slow and timing-dependent for checks
-        test-builder-failure = pkgs.testers.runNixOSTest ./nix/test-builder-failure.nix;
+        test-builder-failure = pkgs.testers.runNixOSTest ./tests/builder-failure.nix;
       };
 
       apps.${system} = {
